@@ -1,77 +1,78 @@
-module DateTimePicker.DateUtils
-    exposing
-        ( Day
-        , MonthType(..)
-        , dayToInt
-        , fromMillitaryAmPm
-        , fromMillitaryHour
-        , generateCalendar
-        , padding
-        , setTime
-        , toDate
-        , toMillitary
-        , toTime
-        )
+module DateTimePicker.DateUtils exposing
+    ( Day
+    , MonthType(..)
+    , dayToInt
+    , fromMillitaryAmPm
+    , fromMillitaryHour
+    , generateCalendar
+    , padding
+    , setTime
+    , toDate
+    , toMillitary
+    , toTime
+    )
 
 import Date
-import Date.Extra.Core
-import Date.Extra.Create
+import Date.Extra
+import DateTime exposing (DateTime)
 import String
+import Time exposing (Weekday(..))
 
 
-dayToInt : Date.Day -> Date.Day -> Int
+dayToInt : Weekday -> Weekday -> Int
 dayToInt startOfWeek day =
     let
         base =
             case day of
-                Date.Sun ->
+                Sun ->
                     0
 
-                Date.Mon ->
+                Mon ->
                     1
 
-                Date.Tue ->
+                Tue ->
                     2
 
-                Date.Wed ->
+                Wed ->
                     3
 
-                Date.Thu ->
+                Thu ->
                     4
 
-                Date.Fri ->
+                Fri ->
                     5
 
-                Date.Sat ->
+                Sat ->
                     6
     in
     case startOfWeek of
-        Date.Sun ->
+        Sun ->
             base
 
-        Date.Mon ->
-            (base - 1) % 7
+        Mon ->
+            modBy 7 (base - 1)
 
-        Date.Tue ->
-            (base - 2) % 7
+        Tue ->
+            modBy 7 (base - 2)
 
-        Date.Wed ->
-            (base - 3) % 7
+        Wed ->
+            modBy 7 (base - 3)
 
-        Date.Thu ->
-            (base - 4) % 7
+        Thu ->
+            modBy 7 (base - 4)
 
-        Date.Fri ->
-            (base - 5) % 7
+        Fri ->
+            modBy 7 (base - 5)
 
-        Date.Sat ->
-            (base - 6) % 7
+        Sat ->
+            modBy 7 (base - 6)
 
 
 calculateNumberOfDaysForPreviousMonth : Int -> Int
 calculateNumberOfDaysForPreviousMonth firstDayInInt =
     if firstDayInInt == 0 then
         7
+
     else
         firstDayInInt
 
@@ -86,25 +87,32 @@ type MonthType
     | Next
 
 
-generateCalendar : Date.Day -> Date.Month -> Int -> List Day
+generateCalendar : Time.Weekday -> Time.Month -> Int -> List Day
 generateCalendar firstDayOfWeek month year =
     let
         firstDateOfMonth =
-            Date.Extra.Create.dateFromFields year month 1 0 0 0 0
+            DateTime.fromCalendarDateTime year month 1 0 0 0
 
         firstDayOfMonth =
             firstDateOfMonth
-                |> Date.dayOfWeek
+                |> DateTime.weekday
                 |> dayToInt firstDayOfWeek
 
         numberOfDaysForPreviousMonth =
             calculateNumberOfDaysForPreviousMonth firstDayOfMonth
 
         daysInMonth =
-            Date.Extra.Core.daysInMonthDate firstDateOfMonth
+            Date.Extra.daysInMonth
+                (DateTime.year firstDateOfMonth)
+                (DateTime.month firstDateOfMonth)
+
+        firstDateOfPreviousMonth =
+            DateTime.add Date.Months -1 firstDateOfMonth
 
         daysInPreviousMonth =
-            Date.Extra.Core.daysInPrevMonth firstDateOfMonth
+            Date.Extra.daysInMonth
+                (DateTime.year firstDateOfPreviousMonth)
+                (DateTime.month firstDateOfPreviousMonth)
 
         previousMonth =
             List.range (daysInPreviousMonth - numberOfDaysForPreviousMonth + 1) daysInPreviousMonth
@@ -121,64 +129,48 @@ generateCalendar firstDayOfWeek month year =
     List.take 42 <| previousMonth ++ currentMonth ++ nextMonth
 
 
-toDateTime : Int -> Date.Month -> Day -> Int -> Int -> Date.Date
+toDateTime : Int -> Time.Month -> Day -> Int -> Int -> DateTime
 toDateTime year month day hour minute =
     case day.monthType of
         Current ->
-            Date.Extra.Create.dateFromFields year month day.day hour minute 0 0
+            DateTime.fromCalendarDateTime year month day.day hour minute 0
 
         Previous ->
-            let
-                previousMonth =
-                    Date.Extra.Create.dateFromFields year month day.day hour minute 0 0
-                        |> Date.Extra.Core.lastOfPrevMonthDate
-            in
-            Date.Extra.Create.dateFromFields (Date.year previousMonth) (Date.month previousMonth) day.day hour minute 0 0
+            DateTime.add Date.Days -1 (DateTime.fromCalendarDateTime year month 1 hour minute 0)
 
         Next ->
-            let
-                nextMonth =
-                    Date.Extra.Create.dateFromFields year month day.day hour minute 0 0
-                        |> Date.Extra.Core.firstOfNextMonthDate
-            in
-            Date.Extra.Create.dateFromFields (Date.year nextMonth) (Date.month nextMonth) day.day hour minute 0 0
+            DateTime.add Date.Months 1 (DateTime.fromCalendarDateTime year month 1 hour minute 0)
 
 
-toDate : Int -> Date.Month -> Day -> Date.Date
+toDate : Int -> Time.Month -> Day -> DateTime
 toDate year month day =
     toDateTime year month day 0 0
 
 
-toTime : Int -> Int -> String -> Date.Date
+toTime : Int -> Int -> String -> DateTime
 toTime hour minute amPm =
-    Date.Extra.Create.dateFromFields
-        0
-        Date.Jan
+    DateTime.fromCalendarDateTime
+        1
+        Time.Jan
         1
         (toMillitary hour amPm)
         minute
         0
-        0
 
 
-setTime : Date.Date -> Int -> Int -> String -> Date.Date
-setTime date hour minute amPm =
-    Date.Extra.Create.dateFromFields
-        (Date.year date)
-        (Date.month date)
-        (Date.day date)
-        (toMillitary hour amPm)
-        minute
-        0
-        0
+setTime : DateTime -> Int -> Int -> String -> DateTime
+setTime dateTime hour minute amPm =
+    DateTime.setTime hour minute (toMillitary hour amPm) dateTime
 
 
 padding : String -> String
 padding str =
     if String.length str == 0 then
         "00"
+
     else if String.length str == 1 then
         "0" ++ str
+
     else
         str
 
@@ -193,7 +185,7 @@ fromMillitaryHour hour =
             12
 
         _ ->
-            hour % 12
+            modBy 12 hour
 
 
 fromMillitaryAmPm : Int -> String
@@ -208,6 +200,7 @@ fromMillitaryAmPm hour =
         _ ->
             if hour >= 12 then
                 "PM"
+
             else
                 "AM"
 

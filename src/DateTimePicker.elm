@@ -1,16 +1,10 @@
-module DateTimePicker
-    exposing
-        ( State
-        , datePicker
-        , datePickerWithConfig
-        , dateTimePicker
-        , dateTimePickerWithConfig
-        , initialCmd
-        , initialState
-        , initialStateWithToday
-        , timePicker
-        , timePickerWithConfig
-        )
+module DateTimePicker exposing
+    ( dateTimePicker, dateTimePickerWithConfig
+    , datePicker, datePickerWithConfig
+    , timePicker, timePickerWithConfig
+    , initialState, initialStateWithToday, initialCmd
+    , State
+    )
 
 {-| DateTime Picker
 
@@ -42,9 +36,8 @@ module DateTimePicker
 -}
 
 import AnalogTimePickerPanel
-import Date
-import Date.Extra.Core
 import DatePickerPanel
+import DateTime exposing (DateTime)
 import DateTimePicker.Config exposing (Config, CssConfig, DatePickerConfig, TimePickerConfig, TimePickerType(..), Type(..), defaultDatePickerConfig, defaultDateTimePickerConfig, defaultTimePickerConfig)
 import DateTimePicker.DateUtils
 import DateTimePicker.Events exposing (onBlurWithChange, onMouseDownPreventDefault, onMouseUpPreventDefault, onTouchEndPreventDefault, onTouchStartPreventDefault)
@@ -56,6 +49,7 @@ import Html.Attributes exposing (value)
 import Html.Events exposing (onBlur, onClick, onFocus)
 import MultiPanel
 import Task
+
 
 
 -- MODEL
@@ -76,26 +70,26 @@ initialState =
 
 {-| Initial state of the DatePicker with today Date
 -}
-initialStateWithToday : Date.Date -> State
+initialStateWithToday : DateTime -> State
 initialStateWithToday today =
     DateTimePicker.Internal.initialStateWithToday today
 
 
 {-| Initial Cmd to set the initial month to be displayed in the datepicker to the current month.
 -}
-initialCmd : (State -> Maybe Date.Date -> msg) -> State -> Cmd msg
+initialCmd : (State -> Maybe DateTime -> msg) -> State -> Cmd msg
 initialCmd onChange (InternalState state) =
     let
         setDate now =
             InternalState
                 { state
                     | today = Just now
-                    , titleDate = Just <| Date.Extra.Core.toFirstOfMonth now
+                    , titleDate = Just <| DateTime.floor DateTime.Month now
                 }
     in
     Task.perform
-        ((setDate >> onChange |> flip) Nothing)
-        Date.now
+        ((setDate >> onChange |> (\f a b -> f b a)) Nothing)
+        DateTime.now
 
 
 
@@ -118,7 +112,7 @@ type alias Model = { datePickerState : DateTimePicker.State, value : Maybe Date 
             model.value
 
 -}
-datePicker : (State -> Maybe Date.Date -> msg) -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+datePicker : (State -> Maybe DateTime -> msg) -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 datePicker onChange =
     datePickerWithConfig (defaultDatePickerConfig onChange)
 
@@ -150,7 +144,7 @@ type alias Model = { datePickerState : DateTimePicker.State, value : Maybe Date 
             model.value
 
 -}
-datePickerWithConfig : Config (CssConfig (DatePickerConfig {}) msg CssClasses) msg -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+datePickerWithConfig : Config (CssConfig (DatePickerConfig {}) msg CssClasses) msg -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 datePickerWithConfig config =
     view (DateType config)
 
@@ -170,7 +164,7 @@ type alias Model = { dateTimePickerState : DateTimePicker.State, value : Maybe D
             model.value
 
 -}
-dateTimePicker : (State -> Maybe Date.Date -> msg) -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+dateTimePicker : (State -> Maybe DateTime -> msg) -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 dateTimePicker onChange =
     dateTimePickerWithConfig (defaultDateTimePickerConfig onChange)
 
@@ -190,7 +184,7 @@ type alias Model = { timePickerState : DateTimePicker.State, value : Maybe DateT
             model.value
 
 -}
-timePicker : (State -> Maybe Date.Date -> msg) -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+timePicker : (State -> Maybe DateTime -> msg) -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 timePicker onChange =
     timePickerWithConfig (defaultTimePickerConfig onChange)
 
@@ -220,7 +214,7 @@ type alias Model = { dateTimePickerState : DateTimePicker.State, value : Maybe D
             model.value
 
 -}
-dateTimePickerWithConfig : Config (CssConfig (DatePickerConfig TimePickerConfig) msg CssClasses) msg -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+dateTimePickerWithConfig : Config (CssConfig (DatePickerConfig TimePickerConfig) msg CssClasses) msg -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 dateTimePickerWithConfig config =
     view (DateTimeType config)
 
@@ -249,12 +243,12 @@ type alias Model = { timePickerState : DateTimePicker.State, value : Maybe Date 
             model.value
 
 -}
-timePickerWithConfig : Config (CssConfig TimePickerConfig msg CssClasses) msg -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+timePickerWithConfig : Config (CssConfig TimePickerConfig msg CssClasses) msg -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 timePickerWithConfig config =
     view (TimeType config)
 
 
-view : Type msg CssClasses -> List (Html.Attribute msg) -> State -> Maybe Date.Date -> Html msg
+view : Type msg CssClasses -> List (Html.Attribute msg) -> State -> Maybe DateTime -> Html msg
 view pickerType attributes ((InternalState stateValue) as state) currentDate =
     let
         timeFormatter dateTimePickerConfig =
@@ -281,6 +275,7 @@ view pickerType attributes ((InternalState stateValue) as state) currentDate =
                 [ input (inputAttributes config) []
                 , if config.usePicker && stateValue.inputFocused && not (shouldForceClose config) then
                     dialog pickerType state currentDate
+
                   else
                     Html.text ""
                 ]
@@ -300,7 +295,7 @@ view pickerType attributes ((InternalState stateValue) as state) currentDate =
 -- VIEW HELPERSs
 
 
-dialog : Type msg CssClasses -> State -> Maybe Date.Date -> Html msg
+dialog : Type msg CssClasses -> State -> Maybe DateTime -> Html msg
 dialog pickerType (InternalState state) currentDate =
     let
         attributes config =
@@ -334,7 +329,7 @@ dialog pickerType (InternalState state) currentDate =
 
         TimeType config ->
             let
-                dialog =
+                dial =
                     case config.timePickerType of
                         Digital ->
                             DigitalTimePickerPanel.view
@@ -343,7 +338,7 @@ dialog pickerType (InternalState state) currentDate =
                             AnalogTimePickerPanel.view
             in
             div (withTimeAttributes config config.timePickerType)
-                [ dialog
+                [ dial
                     { onChange = config.onChange
                     , titleFormatter = config.i18n.timeTitleFormatter
                     , class = config.class
@@ -378,7 +373,7 @@ dialog pickerType (InternalState state) currentDate =
 -- EVENT HANDLERS
 
 
-inputChangeHandler : Config a msg -> State -> Maybe Date.Date -> Maybe Date.Date -> msg
+inputChangeHandler : Config a msg -> State -> Maybe DateTime -> Maybe DateTime -> msg
 inputChangeHandler config (InternalState state) currentDate maybeDate =
     let
         (InternalState initialStateValue) =
@@ -389,9 +384,9 @@ inputChangeHandler config (InternalState state) currentDate maybeDate =
             let
                 updateTime time =
                     { time
-                        | hour = Date.hour date |> DateTimePicker.DateUtils.fromMillitaryHour |> Just
-                        , minute = Just (Date.minute date)
-                        , amPm = Date.hour date |> DateTimePicker.DateUtils.fromMillitaryAmPm |> Just
+                        | hour = DateTime.hour date |> DateTimePicker.DateUtils.fromMillitaryHour |> Just
+                        , minute = Just (DateTime.minute date)
+                        , amPm = DateTime.hour date |> DateTimePicker.DateUtils.fromMillitaryAmPm |> Just
                     }
 
                 updatedValue =
@@ -434,7 +429,7 @@ inputChangeHandler config (InternalState state) currentDate maybeDate =
             config.onChange (InternalState updatedValue) maybeDate
 
 
-datePickerFocused : Type msg CssClasses -> Config a msg -> State -> Maybe Date.Date -> msg
+datePickerFocused : Type msg CssClasses -> Config a msg -> State -> Maybe DateTime -> msg
 datePickerFocused pickerType config (InternalState state) currentDate =
     let
         updatedTitleDate =
@@ -447,9 +442,9 @@ datePickerFocused pickerType config (InternalState state) currentDate =
 
         updateTime time =
             { time
-                | hour = currentDate |> Maybe.map (Date.hour >> DateTimePicker.DateUtils.fromMillitaryHour)
-                , minute = currentDate |> Maybe.map Date.minute
-                , amPm = currentDate |> Maybe.map (Date.hour >> DateTimePicker.DateUtils.fromMillitaryAmPm)
+                | hour = currentDate |> Maybe.map (DateTime.hour >> DateTimePicker.DateUtils.fromMillitaryHour)
+                , minute = currentDate |> Maybe.map DateTime.minute
+                , amPm = currentDate |> Maybe.map (DateTime.hour >> DateTimePicker.DateUtils.fromMillitaryAmPm)
             }
     in
     config.onChange
@@ -473,15 +468,19 @@ datePickerFocused pickerType config (InternalState state) currentDate =
         currentDate
 
 
-onChangeHandler : Type msg className -> State -> Maybe Date.Date -> msg
+type T4 a b c d
+    = T4 a b c d
+
+
+onChangeHandler : Type msg className -> State -> Maybe DateTime -> msg
 onChangeHandler pickerType ((InternalState stateValue) as state) currentDate =
     let
         justDateHandler config =
             config.onChange state stateValue.date
 
         withTimeHandler config =
-            case ( stateValue.date, stateValue.time.hour, stateValue.time.minute, stateValue.time.amPm ) of
-                ( Just date, Just hour, Just minute, Just amPm ) ->
+            case T4 stateValue.date stateValue.time.hour stateValue.time.minute stateValue.time.amPm of
+                T4 (Just date) (Just hour) (Just minute) (Just amPm) ->
                     config.onChange state <| Just <| DateTimePicker.DateUtils.setTime date hour minute amPm
 
                 _ ->

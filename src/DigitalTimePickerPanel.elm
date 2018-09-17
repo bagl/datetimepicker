@@ -1,6 +1,7 @@
 module DigitalTimePickerPanel exposing (Config, view)
 
-import Date exposing (Date)
+import Date
+import DateTime exposing (DateTime)
 import DateTimePicker.Config exposing (CssConfig)
 import DateTimePicker.DateUtils
 import DateTimePicker.Events exposing (onBlurWithChange, onMouseDownPreventDefault, onMouseUpPreventDefault, onTouchEndPreventDefault, onTouchStartPreventDefault)
@@ -10,6 +11,7 @@ import DateTimePicker.Svg
 import Html exposing (Html, button, div, input, li, span, table, tbody, td, text, th, thead, tr, ul)
 import Html.Attributes
 import String
+
 
 
 -- MODEL
@@ -23,8 +25,8 @@ type alias State =
 
 type alias Config otherConfig msg =
     { otherConfig
-        | onChange : State -> Maybe Date -> msg
-        , titleFormatter : Date -> String
+        | onChange : State -> Maybe DateTime -> msg
+        , titleFormatter : DateTime -> String
     }
 
 
@@ -32,7 +34,7 @@ type alias Config otherConfig msg =
 -- VIEWS
 
 
-view : Config (CssConfig a msg CssClasses) msg -> State -> Maybe Date.Date -> Html msg
+view : Config (CssConfig a msg CssClasses) msg -> State -> Maybe DateTime -> Html msg
 view config ((InternalState stateValue) as state) currentDate =
     let
         toListItem str =
@@ -67,14 +69,15 @@ view config ((InternalState stateValue) as state) currentDate =
                         (\selected ->
                             if selected then
                                 config.class [ SelectedHour ]
+
                             else
                                 config.class []
                         )
                     |> Maybe.withDefault (config.class [])
                 , Html.Attributes.attribute "role" "button"
-                , Html.Attributes.attribute "aria-label" ("hour " ++ toString hour)
+                , Html.Attributes.attribute "aria-label" ("hour " ++ Debug.toString hour)
                 ]
-                [ text <| (toString >> DateTimePicker.DateUtils.padding) hour ]
+                [ text <| (Debug.toString >> DateTimePicker.DateUtils.padding) hour ]
 
         minuteCell min =
             td
@@ -86,14 +89,15 @@ view config ((InternalState stateValue) as state) currentDate =
                         (\selected ->
                             if selected then
                                 config.class [ SelectedMinute ]
+
                             else
                                 config.class []
                         )
                     |> Maybe.withDefault (config.class [])
                 , Html.Attributes.attribute "role" "button"
-                , Html.Attributes.attribute "aria-label" ("minute " ++ toString min)
+                , Html.Attributes.attribute "aria-label" ("minute " ++ Debug.toString min)
                 ]
-                [ text <| (toString >> DateTimePicker.DateUtils.padding) min ]
+                [ text <| (Debug.toString >> DateTimePicker.DateUtils.padding) min ]
 
         amPmCell ampm =
             let
@@ -101,6 +105,7 @@ view config ((InternalState stateValue) as state) currentDate =
                     config.class <|
                         if ampm == "" then
                             [ EmptyCell ]
+
                         else
                             []
             in
@@ -111,6 +116,7 @@ view config ((InternalState stateValue) as state) currentDate =
                         (\selected ->
                             if selected then
                                 config.class [ SelectedAmPm ]
+
                             else
                                 defaultClasses
                         )
@@ -120,6 +126,7 @@ view config ((InternalState stateValue) as state) currentDate =
                  ]
                     ++ (if ampm == "" then
                             []
+
                         else
                             [ onMouseDownPreventDefault <| amPmClickHandler config state ampm
                             , onTouchStartPreventDefault <| amPmClickHandler config state ampm
@@ -128,32 +135,32 @@ view config ((InternalState stateValue) as state) currentDate =
                 )
                 [ text ampm ]
 
-        upArrows config =
+        upArrows cfg =
             [ tr [ config.class [ ArrowUp ] ]
                 [ td
-                    [ onMouseDownPreventDefault <| hourUpHandler config state currentDate
-                    , onTouchStartPreventDefault <| hourUpHandler config state currentDate
+                    [ onMouseDownPreventDefault <| hourUpHandler cfg state currentDate
+                    , onTouchStartPreventDefault <| hourUpHandler cfg state currentDate
                     ]
                     [ DateTimePicker.Svg.upArrow ]
                 , td
-                    [ onMouseDownPreventDefault <| minuteUpHandler config state currentDate
-                    , onTouchStartPreventDefault <| minuteUpHandler config state currentDate
+                    [ onMouseDownPreventDefault <| minuteUpHandler cfg state currentDate
+                    , onTouchStartPreventDefault <| minuteUpHandler cfg state currentDate
                     ]
                     [ DateTimePicker.Svg.upArrow ]
                 , td [] []
                 ]
             ]
 
-        downArrows config =
+        downArrows cfg =
             [ tr [ config.class [ ArrowDown ] ]
                 [ td
-                    [ onMouseDownPreventDefault <| hourDownHandler config state currentDate
-                    , onTouchStartPreventDefault <| hourDownHandler config state currentDate
+                    [ onMouseDownPreventDefault <| hourDownHandler cfg state currentDate
+                    , onTouchStartPreventDefault <| hourDownHandler cfg state currentDate
                     ]
                     [ DateTimePicker.Svg.downArrow ]
                 , td
-                    [ onMouseDownPreventDefault <| minuteDownHandler config state currentDate
-                    , onTouchStartPreventDefault <| minuteDownHandler config state currentDate
+                    [ onMouseDownPreventDefault <| minuteDownHandler cfg state currentDate
+                    , onTouchStartPreventDefault <| minuteDownHandler cfg state currentDate
                     ]
                     [ DateTimePicker.Svg.downArrow ]
                 , td [] []
@@ -232,6 +239,7 @@ amPmClickHandler config (InternalState state) amPm =
                         | amPm =
                             if String.isEmpty amPm then
                                 Nothing
+
                             else
                                 Just amPm
                     }
@@ -251,48 +259,52 @@ amPmClickHandler config (InternalState state) amPm =
     config.onChange (InternalState { updatedStateValue | forceClose = forceClose }) updatedTime
 
 
-hourUpHandler : Config a msg -> State -> Maybe Date.Date -> msg
+hourUpHandler : Config a msg -> State -> Maybe DateTime -> msg
 hourUpHandler config (InternalState state) currentDate =
     let
         updatedState =
             if state.hourPickerStart - 6 >= 1 then
                 { state | hourPickerStart = state.hourPickerStart - 6 }
+
             else
                 state
     in
     config.onChange (InternalState updatedState) currentDate
 
 
-hourDownHandler : Config a msg -> State -> Maybe Date.Date -> msg
+hourDownHandler : Config a msg -> State -> Maybe DateTime -> msg
 hourDownHandler config (InternalState state) currentDate =
     let
         updatedState =
             if state.hourPickerStart + 6 <= 12 then
                 { state | hourPickerStart = state.hourPickerStart + 6 }
+
             else
                 state
     in
     config.onChange (InternalState updatedState) currentDate
 
 
-minuteUpHandler : Config a msg -> State -> Maybe Date.Date -> msg
+minuteUpHandler : Config a msg -> State -> Maybe DateTime -> msg
 minuteUpHandler config (InternalState state) currentDate =
     let
         updatedState =
             if state.minutePickerStart - 6 >= 0 then
                 { state | minutePickerStart = state.minutePickerStart - 6 }
+
             else
                 state
     in
     config.onChange (InternalState updatedState) currentDate
 
 
-minuteDownHandler : Config a msg -> State -> Maybe Date.Date -> msg
+minuteDownHandler : Config a msg -> State -> Maybe DateTime -> msg
 minuteDownHandler config (InternalState state) currentDate =
     let
         updatedState =
             if state.minutePickerStart + 6 <= 59 then
                 { state | minutePickerStart = state.minutePickerStart + 6 }
+
             else
                 state
     in

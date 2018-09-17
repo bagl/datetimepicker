@@ -3,6 +3,7 @@ module MultiPanel exposing (view)
 import AnalogTimePickerPanel
 import Date
 import DatePickerPanel
+import DateTime exposing (DateTime)
 import DateTimePicker.Config exposing (CssConfig, TimePickerType(..))
 import DateTimePicker.DateUtils
 import DateTimePicker.Internal exposing (InternalState(..))
@@ -15,17 +16,21 @@ type alias State =
     InternalState
 
 
-view : DatePickerPanel.Config (CssConfig a msg CssClasses) msg -> ( TimePickerType, DigitalTimePickerPanel.Config (CssConfig a msg CssClasses) msg ) -> State -> Maybe Date.Date -> List (Html msg)
+type T4 a b c d
+    = T4 a b c d
+
+
+view : DatePickerPanel.Config (CssConfig a msg CssClasses) msg -> ( TimePickerType, DigitalTimePickerPanel.Config (CssConfig a msg CssClasses) msg ) -> State -> Maybe DateTime -> List (Html msg)
 view dateConfig ( timeType, timeConfig ) state currentDate =
     let
-        safeOnChange (InternalState state) _ =
+        safeOnChange (InternalState st) _ =
             -- we ignore the provided value
             -- (which may come from either the date or the time panel)
             -- and instead check the state
             -- to see if both a date and time have been picked
-            dateConfig.onChange (InternalState state)
-                (case ( state.date, state.time.hour, state.time.minute, state.time.amPm ) of
-                    ( Just date, Just hour, Just minute, Just amPm ) ->
+            dateConfig.onChange (InternalState st)
+                (case T4 st.date st.time.hour st.time.minute st.time.amPm of
+                    T4 (Just date) (Just hour) (Just minute) (Just amPm) ->
                         Just <| DateTimePicker.DateUtils.setTime date hour minute amPm
 
                     _ ->

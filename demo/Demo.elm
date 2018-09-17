@@ -1,9 +1,9 @@
 module Demo exposing (main)
 
+-- import Date.Extra.Config.Config_en_us exposing (config)
+-- import Date.Extra.Format
+
 import Css
-import Date exposing (Date)
-import Date.Extra.Config.Config_en_us exposing (config)
-import Date.Extra.Format
 import DateParser
 import DateTimePicker
 import DateTimePicker.Config exposing (Config, CssConfig, DatePickerConfig, TimePickerConfig, defaultDatePickerConfig, defaultDateTimeI18n, defaultDateTimePickerConfig, defaultTimePickerConfig)
@@ -12,7 +12,10 @@ import DateTimePicker.SharedStyles
 import DemoCss exposing (CssClasses(..))
 import Dict exposing (Dict)
 import Html exposing (Html, div, form, h3, label, li, p, text, ul)
-import Html.CssHelpers
+
+
+
+--import Html.CssHelpers
 
 
 main : Program Never Model Msg
@@ -61,8 +64,9 @@ subscriptions model =
     Sub.none
 
 
-{ id, class, classList } =
-    Html.CssHelpers.withNamespace ""
+
+-- { id, class, classList } =
+--     Html.CssHelpers.withNamespace ""
 
 
 analogDateTimePickerConfig : Config (CssConfig (DatePickerConfig TimePickerConfig) Msg DateTimePicker.SharedStyles.CssClasses) Msg

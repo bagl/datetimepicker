@@ -1,67 +1,64 @@
-module DateTimePicker.Formatter
-    exposing
-        ( dateFormatter
-        , datePattern
-        , dateTimeFormatter
-        , dateTimePattern
-        , footerFormatter
-        , footerPattern
-        , timeFormatter
-        , timePattern
-        , titleFormatter
-        , titlePattern
-        )
+module DateTimePicker.Formatter exposing
+    ( dateFormatter
+    , datePattern
+    , dateTimeFormatter
+    , dateTimePattern
+    , footerFormatter
+    , footerPattern
+    , timeFormatter
+    , timePattern
+    , titleFormatter
+    , titlePattern
+    )
 
-import Date exposing (Date)
-import Date.Extra.Config.Config_en_us exposing (config)
-import Date.Extra.Format
+import DateTime exposing (DateTime)
 
 
-titleFormatter : Date -> String
+titleFormatter : DateTime -> String
 titleFormatter =
-    Date.Extra.Format.format config titlePattern
+    DateTime.format titlePattern
 
 
 titlePattern : String
 titlePattern =
-    "%B %Y"
+    "MMMM yyyy"
 
 
-dateFormatter : Date -> String
+dateFormatter : DateTime -> String
 dateFormatter =
-    Date.Extra.Format.format config datePattern
+    DateTime.format datePattern
 
 
 datePattern : String
 datePattern =
-    "%m/%d/%Y"
+    "yyyy-MM-dd"
 
 
-footerFormatter : Date -> String
+footerFormatter : DateTime -> String
 footerFormatter =
-    Date.Extra.Format.format config footerPattern
+    DateTime.format footerPattern
 
 
 footerPattern : String
 footerPattern =
-    "%A, %B %d, %Y"
+    "E yyyy-MM-dd"
 
 
-dateTimeFormatter : Date -> String
+dateTimeFormatter : DateTime -> String
 dateTimeFormatter =
-    Date.Extra.Format.format config dateTimePattern
+    DateTime.format dateTimePattern
 
 
 dateTimePattern : String
 dateTimePattern =
-    "%m/%d/%Y %I:%M %p"
+    "yyyy-MM-dd HH:mm:ss"
 
 
-timeFormatter : Date -> String
+timeFormatter : DateTime -> String
 timeFormatter =
-    Date.Extra.Format.format config timePattern
+    DateTime.format timePattern
 
 
 timePattern : String
 timePattern =
-    "%I:%M %p"
+    "HH:mm:ss"

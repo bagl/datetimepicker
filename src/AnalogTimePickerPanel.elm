@@ -1,6 +1,6 @@
 module AnalogTimePickerPanel exposing (view)
 
-import Date exposing (Date)
+import DateTime exposing (DateTime)
 import DateTimePicker.ClockUtils exposing (hours, minutes, minutesPerFive)
 import DateTimePicker.Config exposing (CssConfig)
 import DateTimePicker.DateUtils
@@ -24,25 +24,26 @@ type alias State =
 
 type alias Config otherConfig msg =
     { otherConfig
-        | onChange : State -> Maybe Date -> msg
-        , titleFormatter : Date -> String
+        | onChange : State -> Maybe DateTime -> msg
+        , titleFormatter : DateTime -> String
     }
 
 
-view : Config (CssConfig a msg CssClasses) msg -> State -> Maybe Date.Date -> Html msg
+view : Config (CssConfig a msg CssClasses) msg -> State -> Maybe DateTime -> Html msg
 view config ((InternalState stateValue) as state) currentDate =
     let
         isActive timeIndicator =
             if stateValue.activeTimeIndicator == Just timeIndicator then
                 [ Active ]
+
             else
                 []
 
-        amPmPicker config =
+        amPmPicker cfg =
             div [ config.class [ AMPMPicker ] ]
                 [ div
-                    [ onMouseDownPreventDefault <| amPmPickerHandler config state currentDate "AM"
-                    , onTouchStartPreventDefault <| amPmPickerHandler config state currentDate "AM"
+                    [ onMouseDownPreventDefault <| amPmPickerHandler cfg state currentDate "AM"
+                    , onTouchStartPreventDefault <| amPmPickerHandler cfg state currentDate "AM"
                     , case stateValue.time.amPm of
                         Just "AM" ->
                             config.class [ AM, SelectedAmPm ]
@@ -52,8 +53,8 @@ view config ((InternalState stateValue) as state) currentDate =
                     ]
                     [ Html.text "AM" ]
                 , div
-                    [ onMouseDownPreventDefault <| amPmPickerHandler config state currentDate "PM"
-                    , onTouchStartPreventDefault <| amPmPickerHandler config state currentDate "PM"
+                    [ onMouseDownPreventDefault <| amPmPickerHandler cfg state currentDate "PM"
+                    , onTouchStartPreventDefault <| amPmPickerHandler cfg state currentDate "PM"
                     , case stateValue.time.amPm of
                         Just "PM" ->
                             config.class [ PM, SelectedAmPm ]
@@ -71,14 +72,14 @@ view config ((InternalState stateValue) as state) currentDate =
                 , onTouchStartPreventDefault (timeIndicatorHandler config state currentDate DateTimePicker.Internal.HourIndicator)
                 , config.class (Hour :: isActive DateTimePicker.Internal.HourIndicator)
                 ]
-                [ Html.text (stateValue.time.hour |> Maybe.map (toString >> DateTimePicker.DateUtils.padding) |> Maybe.withDefault "--") ]
+                [ Html.text (stateValue.time.hour |> Maybe.map (String.fromInt >> DateTimePicker.DateUtils.padding) |> Maybe.withDefault "--") ]
             , span [ config.class [ Separator ] ] [ Html.text " : " ]
             , span
                 [ onMouseDownPreventDefault (timeIndicatorHandler config state currentDate DateTimePicker.Internal.MinuteIndicator)
                 , onTouchStartPreventDefault (timeIndicatorHandler config state currentDate DateTimePicker.Internal.MinuteIndicator)
                 , config.class (Minute :: isActive DateTimePicker.Internal.MinuteIndicator)
                 ]
-                [ Html.text (stateValue.time.minute |> Maybe.map (toString >> DateTimePicker.DateUtils.padding) |> Maybe.withDefault "--") ]
+                [ Html.text (stateValue.time.minute |> Maybe.map (String.fromInt >> DateTimePicker.DateUtils.padding) |> Maybe.withDefault "--") ]
             , span
                 [ onMouseDownPreventDefault (timeIndicatorHandler config state currentDate DateTimePicker.Internal.AMPMIndicator)
                 , onTouchStartPreventDefault (timeIndicatorHandler config state currentDate DateTimePicker.Internal.AMPMIndicator)
@@ -107,7 +108,7 @@ minuteArrowLength =
     70
 
 
-clock : CssConfig a msg CssClasses -> (InternalState -> Maybe Date -> msg) -> InternalState -> Maybe Date -> Html msg
+clock : CssConfig a msg CssClasses -> (InternalState -> Maybe DateTime -> msg) -> InternalState -> Maybe DateTime -> Html msg
 clock config onChange ((InternalState stateValue) as state) date =
     div
         [ config.class [ AnalogClock ]
@@ -141,43 +142,43 @@ clock config onChange ((InternalState stateValue) as state) date =
         ]
 
 
-currentTime : (InternalState -> Maybe Date -> msg) -> InternalState -> Maybe Date -> Svg msg
+currentTime : (InternalState -> Maybe DateTime -> msg) -> InternalState -> Maybe DateTime -> Svg msg
 currentTime onChange (InternalState state) date =
     let
         time =
             state.time
 
-        hourArrowLength =
+        hourArrowLength_ =
             50
 
         drawHour hour minute =
-            Dict.get (toString hour) hours
-                |> Maybe.map (flip (-) (toFloat minute * pi / 360))
-                |> Maybe.map (DateTimePicker.Geometry.calculateArrowPoint originPoint hourArrowLength >> drawArrow onChange (InternalState state) date)
+            Dict.get (String.fromInt hour) hours
+                |> Maybe.map (\x -> x - (toFloat minute * pi / 360))
+                |> Maybe.map (DateTimePicker.Geometry.calculateArrowPoint originPoint hourArrowLength_ >> drawArrow onChange (InternalState state) date)
                 |> Maybe.withDefault (Html.text "")
 
         drawMinute minute =
-            Dict.get (toString minute) minutes
+            Dict.get (String.fromInt minute) minutes
                 |> Maybe.map (DateTimePicker.Geometry.calculateArrowPoint originPoint minuteArrowLength >> drawArrow onChange (InternalState state) date)
                 |> Maybe.withDefault (Html.text "")
     in
-    case ( state.activeTimeIndicator, time.hour, time.minute, time.amPm ) of
-        ( Nothing, Just hour, Just minute, Just _ ) ->
+    case T4 state.activeTimeIndicator time.hour time.minute time.amPm of
+        T4 Nothing (Just hour) (Just minute) (Just _) ->
             g [] [ drawHour hour minute, drawMinute minute ]
 
         _ ->
             Html.text ""
 
 
-clockFace : (InternalState -> Maybe Date -> msg) -> InternalState -> Maybe Date -> ( String, Float ) -> Svg msg
+clockFace : (InternalState -> Maybe DateTime -> msg) -> InternalState -> Maybe DateTime -> ( String, Float ) -> Svg msg
 clockFace onChange state date ( number, radians ) =
     let
         point =
             DateTimePicker.Geometry.calculateArrowPoint originPoint 85 radians
     in
     text_
-        [ x <| toString point.x
-        , y <| toString point.y
+        [ x <| String.fromInt point.x
+        , y <| String.fromInt point.y
         , textAnchor "middle"
         , Svg.Attributes.dominantBaseline "central"
         , onMouseDownPreventDefault (mouseDownHandler state date onChange)
@@ -196,7 +197,7 @@ axisPoint =
     Point 200 100
 
 
-arrow : (InternalState -> Maybe Date -> msg) -> InternalState -> Maybe Date -> Svg msg
+arrow : (InternalState -> Maybe DateTime -> msg) -> InternalState -> Maybe DateTime -> Svg msg
 arrow onChange (InternalState state) date =
     let
         length =
@@ -242,17 +243,18 @@ arrow onChange (InternalState state) date =
                 angle
                     |> arrowPoint
                     |> drawArrow onChange (InternalState state) date
+
             else
                 Html.text ""
 
 
-drawArrow : (InternalState -> Maybe Date -> msg) -> InternalState -> Maybe Date -> Point -> Svg msg
+drawArrow : (InternalState -> Maybe DateTime -> msg) -> InternalState -> Maybe DateTime -> Point -> Svg msg
 drawArrow onChange state date point =
     line
         [ x1 "100"
         , y1 "100"
-        , x2 <| toString point.x
-        , y2 <| toString point.y
+        , x2 <| String.fromInt point.x
+        , y2 <| String.fromInt point.y
         , strokeWidth "2px"
         , stroke "#aaa"
         , onMouseDownPreventDefault (mouseDownHandler state date onChange)
@@ -261,7 +263,7 @@ drawArrow onChange state date point =
         []
 
 
-mouseDownHandler : InternalState -> Maybe Date -> (InternalState -> Maybe Date -> msg) -> msg
+mouseDownHandler : InternalState -> Maybe DateTime -> (InternalState -> Maybe DateTime -> msg) -> msg
 mouseDownHandler (InternalState state) date onChange =
     let
         updatedDate =
@@ -277,7 +279,7 @@ mouseDownHandler (InternalState state) date onChange =
     onChange updatedState updatedDate
 
 
-mouseOverHandler : InternalState -> Maybe Date -> (InternalState -> Maybe Date -> msg) -> MoveData -> Json.Decode.Decoder msg
+mouseOverHandler : InternalState -> Maybe DateTime -> (InternalState -> Maybe DateTime -> msg) -> MoveData -> Json.Decode.Decoder msg
 mouseOverHandler (InternalState state) date onChange moveData =
     let
         decoder updatedState =
@@ -294,7 +296,7 @@ mouseOverHandler (InternalState state) date onChange moveData =
             decoder (InternalState state)
 
 
-updateHourState : InternalState -> Maybe Date -> MoveData -> InternalState
+updateHourState : InternalState -> Maybe DateTime -> MoveData -> InternalState
 updateHourState (InternalState state) date moveData =
     let
         currentAngle =
@@ -309,7 +311,7 @@ updateHourState (InternalState state) date moveData =
                 |> Maybe.map Tuple.first
 
         updateTime time hour =
-            { time | hour = hour |> Maybe.andThen (String.toInt >> Result.toMaybe) }
+            { time | hour = hour |> Maybe.andThen String.toInt }
     in
     InternalState
         { state
@@ -319,7 +321,7 @@ updateHourState (InternalState state) date moveData =
         }
 
 
-updateMinuteState : InternalState -> Maybe Date -> MoveData -> InternalState
+updateMinuteState : InternalState -> Maybe DateTime -> MoveData -> InternalState
 updateMinuteState (InternalState state) date moveData =
     let
         currentAngle =
@@ -334,7 +336,7 @@ updateMinuteState (InternalState state) date moveData =
                 |> Maybe.map Tuple.first
 
         updateTime time minute =
-            { time | minute = minute |> Maybe.andThen (String.toInt >> Result.toMaybe) }
+            { time | minute = minute |> Maybe.andThen String.toInt }
     in
     InternalState
         { state
@@ -344,7 +346,7 @@ updateMinuteState (InternalState state) date moveData =
         }
 
 
-timeIndicatorHandler : Config a msg -> State -> Maybe Date.Date -> DateTimePicker.Internal.TimeIndicator -> msg
+timeIndicatorHandler : Config a msg -> State -> Maybe DateTime -> DateTimePicker.Internal.TimeIndicator -> msg
 timeIndicatorHandler config (InternalState state) currentDate timeIndicator =
     let
         updatedState =
@@ -356,6 +358,7 @@ timeIndicatorHandler config (InternalState state) currentDate timeIndicator =
         updatedActiveTimeIndicator =
             if state.activeTimeIndicator == Just timeIndicator then
                 Nothing
+
             else
                 Just timeIndicator
 
@@ -373,7 +376,7 @@ timeIndicatorHandler config (InternalState state) currentDate timeIndicator =
     config.onChange (InternalState updatedState) currentDate
 
 
-amPmPickerHandler : Config a msg -> State -> Maybe Date.Date -> String -> msg
+amPmPickerHandler : Config a msg -> State -> Maybe DateTime -> String -> msg
 amPmPickerHandler config (InternalState state) currentDate amPm =
     let
         time =
@@ -395,7 +398,7 @@ amPmPickerHandler config (InternalState state) currentDate amPm =
         (updateCurrentDate updatedState)
 
 
-updateCurrentDate : InternalState -> Maybe Date
+updateCurrentDate : InternalState -> Maybe DateTime
 updateCurrentDate (InternalState state) =
     case ( state.time.hour, state.time.minute, state.time.amPm ) of
         ( Just hour, Just minute, Just amPm ) ->
@@ -405,44 +408,48 @@ updateCurrentDate (InternalState state) =
             Nothing
 
 
+type T4 a b c d
+    = T4 a b c d
+
+
 updateTimeIndicator : Maybe TimeIndicator -> Time -> Maybe TimeIndicator
 updateTimeIndicator activeIndicator time =
-    case ( activeIndicator, time.hour, time.minute, time.amPm ) of
-        ( Just HourIndicator, _, Nothing, _ ) ->
+    case T4 activeIndicator time.hour time.minute time.amPm of
+        T4 (Just HourIndicator) _ Nothing _ ->
             Just MinuteIndicator
 
-        ( Just HourIndicator, _, Just _, Nothing ) ->
+        T4 (Just HourIndicator) _ (Just _) Nothing ->
             Just AMPMIndicator
 
-        ( Just HourIndicator, _, Just _, Just _ ) ->
+        T4 (Just HourIndicator) _ (Just _) (Just _) ->
             Nothing
 
-        ( Just MinuteIndicator, _, _, Nothing ) ->
+        T4 (Just MinuteIndicator) _ _ Nothing ->
             Just AMPMIndicator
 
-        ( Just MinuteIndicator, Nothing, _, Just _ ) ->
+        T4 (Just MinuteIndicator) Nothing _ (Just _) ->
             Just HourIndicator
 
-        ( Just MinuteIndicator, Just _, _, Just _ ) ->
+        T4 (Just MinuteIndicator) (Just _) _ (Just _) ->
             Nothing
 
-        ( Just AMPMIndicator, Nothing, _, _ ) ->
+        T4 (Just AMPMIndicator) Nothing _ _ ->
             Just HourIndicator
 
-        ( Just AMPMIndicator, Just _, Nothing, _ ) ->
+        T4 (Just AMPMIndicator) (Just _) Nothing _ ->
             Just MinuteIndicator
 
-        ( Just AMPMIndicator, Just _, Just _, _ ) ->
+        T4 (Just AMPMIndicator) (Just _) (Just _) _ ->
             Nothing
 
-        ( Nothing, Nothing, _, _ ) ->
+        T4 Nothing Nothing _ _ ->
             Just HourIndicator
 
-        ( Nothing, Just _, Nothing, _ ) ->
+        T4 Nothing (Just _) Nothing _ ->
             Just MinuteIndicator
 
-        ( Nothing, Just _, Just _, Nothing ) ->
+        T4 Nothing (Just _) (Just _) Nothing ->
             Just AMPMIndicator
 
-        ( _, Just _, Just _, Just _ ) ->
+        T4 _ (Just _) (Just _) (Just _) ->
             Nothing

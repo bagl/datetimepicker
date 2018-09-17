@@ -1,14 +1,12 @@
-module DateTimePicker.Internal
-    exposing
-        ( InternalState(..)
-        , Time
-        , TimeIndicator(..)
-        , initialState
-        , initialStateWithToday
-        )
+module DateTimePicker.Internal exposing
+    ( InternalState(..)
+    , Time
+    , TimeIndicator(..)
+    , initialState
+    , initialStateWithToday
+    )
 
-import Date exposing (Date)
-import Date.Extra.Core
+import DateTime exposing (DateTime)
 
 
 type InternalState
@@ -16,9 +14,9 @@ type InternalState
         { inputFocused : Bool
         , forceClose : Bool
         , event : String
-        , today : Maybe Date
-        , titleDate : Maybe Date
-        , date : Maybe Date
+        , today : Maybe DateTime
+        , titleDate : Maybe DateTime
+        , date : Maybe DateTime
         , time : Time
         , hourPickerStart : Int
         , minutePickerStart : Int
@@ -54,14 +52,14 @@ initialState =
         }
 
 
-initialStateWithToday : Date -> InternalState
+initialStateWithToday : DateTime -> InternalState
 initialStateWithToday today =
     InternalState
         { inputFocused = False
         , forceClose = False
         , event = ""
         , today = Just today
-        , titleDate = Just <| Date.Extra.Core.toFirstOfMonth today
+        , titleDate = Just <| DateTime.floor DateTime.Month today
         , date = Nothing
         , time = Time Nothing Nothing Nothing
         , hourPickerStart = 1

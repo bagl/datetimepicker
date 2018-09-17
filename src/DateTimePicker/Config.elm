@@ -1,24 +1,7 @@
-module DateTimePicker.Config
-    exposing
-        ( Config
-        , CssConfig
-        , DatePickerConfig
-        , I18n
-        , InputFormat
-        , NameOfDays
-        , TimePickerConfig
-        , TimePickerType(..)
-        , Type(..)
-        , defaultDateI18n
-        , defaultDateInputFormat
-        , defaultDatePickerConfig
-        , defaultDateTimeI18n
-        , defaultDateTimeInputFormat
-        , defaultDateTimePickerConfig
-        , defaultNamespace
-        , defaultTimeI18n
-        , defaultTimePickerConfig
-        )
+module DateTimePicker.Config exposing
+    ( Config, I18n, InputFormat, DatePickerConfig, TimePickerConfig, NameOfDays, TimePickerType(..), Type(..), CssConfig
+    , defaultDatePickerConfig, defaultTimePickerConfig, defaultDateTimePickerConfig, defaultDateI18n, defaultTimeI18n, defaultDateTimeI18n, defaultDateInputFormat, defaultDateTimeInputFormat, defaultNamespace
+    )
 
 {-| DateTimePicker configuration
 
@@ -34,13 +17,14 @@ module DateTimePicker.Config
 
 -}
 
-import Date exposing (Date)
-import Date.Extra.Config.Config_en_us exposing (config)
-import DateParser
+--import DateParser
+
+import DateTime exposing (DateTime)
 import DateTimePicker.Formatter
 import DateTimePicker.Internal exposing (InternalState)
 import Html
 import Html.Attributes
+import Time
 
 
 type alias State =
@@ -64,7 +48,7 @@ type Type msg className
 -}
 type alias Config otherConfig msg =
     { otherConfig
-        | onChange : State -> Maybe Date -> msg
+        | onChange : State -> Maybe DateTime -> msg
         , autoClose : Bool
         , i18n : I18n
         , usePicker : Bool
@@ -85,16 +69,16 @@ type alias CssConfig otherConfig msg className =
 
 {-| Internationalization configuration
 
-  - `footerFormatter` is a Date to string formatter used to display the date in the footer section.
-  - `titleFormatter` is a Date to string formatter used to display the date in the title section.
-  - `timeTitleFormatter` is a Date to string formatter used to display the time in the title section.
+  - `footerFormatter` is a DateTime to string formatter used to display the date in the footer section.
+  - `titleFormatter` is a DateTime to string formatter used to display the date in the title section.
+  - `timeTitleFormatter` is a DateTime to string formatter used to display the time in the title section.
   - `inputFormat` is an input date formatter and parser.
 
 -}
 type alias I18n =
-    { titleFormatter : Date -> String
-    , footerFormatter : Date -> String
-    , timeTitleFormatter : Date -> String
+    { titleFormatter : DateTime -> String
+    , footerFormatter : DateTime -> String
+    , timeTitleFormatter : DateTime -> String
     , inputFormat : InputFormat
     }
 
@@ -111,20 +95,20 @@ type alias I18n =
 type alias DatePickerConfig otherConfig =
     { otherConfig
         | nameOfDays : NameOfDays
-        , firstDayOfWeek : Date.Day
+        , firstDayOfWeek : Time.Weekday
         , allowYearNavigation : Bool
     }
 
 
 {-| Input formatter and parser
 
-  - `inputFormatter` is a Date to string formatter used to display the date in the input text
-  - `inputParser` is a String to Date parser used to parsed input text into Date
+  - `inputFormatter` is a DateTime to string formatter used to display the date in the input text
+  - `inputParser` is a String to DateTime parser used to parsed input text into Date
 
 -}
 type alias InputFormat =
-    { inputFormatter : Date -> String
-    , inputParser : String -> Maybe Date
+    { inputFormatter : DateTime -> String
+    , inputParser : String -> Maybe DateTime
     }
 
 
@@ -181,13 +165,14 @@ defaultDateTimeI18n =
 defaultDateInputFormat : InputFormat
 defaultDateInputFormat =
     { inputFormatter = DateTimePicker.Formatter.dateFormatter
-    , inputParser =
-        \input ->
-            input
-                |> DateParser.parse config DateTimePicker.Formatter.datePattern
-                |> Result.toMaybe
-                |> Maybe.map Just
-                |> Maybe.withDefault (Date.fromString input |> Result.toMaybe)
+    , inputParser = always Nothing
+
+    -- \input ->
+    --     input
+    --         |> DateParser.parse config DateTimePicker.Formatter.datePattern
+    --         |> Result.toMaybe
+    --         |> Maybe.map Just
+    --         |> Maybe.withDefault (Date.fromString input |> Result.toMaybe)
     }
 
 
@@ -196,13 +181,14 @@ defaultDateInputFormat =
 defaultDateTimeInputFormat : InputFormat
 defaultDateTimeInputFormat =
     { inputFormatter = DateTimePicker.Formatter.dateTimeFormatter
-    , inputParser =
-        \input ->
-            input
-                |> DateParser.parse config DateTimePicker.Formatter.dateTimePattern
-                |> Result.toMaybe
-                |> Maybe.map Just
-                |> Maybe.withDefault (Date.fromString input |> Result.toMaybe)
+    , inputParser = always Nothing
+
+    -- \input ->
+    --     input
+    --         |> DateParser.parse config DateTimePicker.Formatter.dateTimePattern
+    --         |> Result.toMaybe
+    --         |> Maybe.map Just
+    --         |> Maybe.withDefault (Date.fromString input |> Result.toMaybe)
     }
 
 
@@ -211,11 +197,12 @@ defaultDateTimeInputFormat =
 defaultTimeInputFormat : InputFormat
 defaultTimeInputFormat =
     { inputFormatter = DateTimePicker.Formatter.timeFormatter
-    , inputParser =
-        \input ->
-            input
-                |> DateParser.parse config DateTimePicker.Formatter.timePattern
-                |> Result.toMaybe
+    , inputParser = always Nothing
+
+    -- \input ->
+    --     input
+    --         |> DateParser.parse config DateTimePicker.Formatter.timePattern
+    --         |> Result.toMaybe
     }
 
 
@@ -245,12 +232,12 @@ type TimePickerType
   - `allowYearNavigation` Default : True
 
 -}
-defaultDatePickerConfig : (State -> Maybe Date -> msg) -> Config (CssConfig (DatePickerConfig {}) msg className) msg
+defaultDatePickerConfig : (State -> Maybe DateTime -> msg) -> Config (CssConfig (DatePickerConfig {}) msg className) msg
 defaultDatePickerConfig onChange =
     { onChange = onChange
     , autoClose = True
     , nameOfDays = defaultNameOfDays
-    , firstDayOfWeek = Date.Sun
+    , firstDayOfWeek = Time.Sun
     , allowYearNavigation = True
     , i18n = defaultDateI18n
     , usePicker = True
@@ -269,7 +256,7 @@ defaultDatePickerConfig onChange =
   - `timePickerType` Default: Analog
 
 -}
-defaultTimePickerConfig : (State -> Maybe Date -> msg) -> Config (CssConfig TimePickerConfig msg className) msg
+defaultTimePickerConfig : (State -> Maybe DateTime -> msg) -> Config (CssConfig TimePickerConfig msg className) msg
 defaultTimePickerConfig onChange =
     { onChange = onChange
     , autoClose = False
@@ -296,12 +283,12 @@ defaultTimePickerConfig onChange =
   - `allowYearNavigation` Default : True
 
 -}
-defaultDateTimePickerConfig : (State -> Maybe Date -> msg) -> Config (CssConfig (DatePickerConfig TimePickerConfig) msg className) msg
+defaultDateTimePickerConfig : (State -> Maybe DateTime -> msg) -> Config (CssConfig (DatePickerConfig TimePickerConfig) msg className) msg
 defaultDateTimePickerConfig onChange =
     { onChange = onChange
     , autoClose = False
     , nameOfDays = defaultNameOfDays
-    , firstDayOfWeek = Date.Sun
+    , firstDayOfWeek = Time.Sun
     , timePickerType = Analog
     , allowYearNavigation = True
     , i18n = defaultDateTimeI18n
@@ -351,7 +338,7 @@ defaultNameOfDays =
 defaultClass : List a -> Html.Attribute msg
 defaultClass classes =
     classes
-        |> List.map (\class -> ( defaultNamespace ++ toString class, True ))
+        |> List.map (\class -> ( defaultNamespace ++ Debug.toString class, True ))
         |> Html.Attributes.classList
 
 

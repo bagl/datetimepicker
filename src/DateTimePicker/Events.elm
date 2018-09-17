@@ -1,18 +1,17 @@
-module DateTimePicker.Events
-    exposing
-        ( MoveData
-        , onBlurWithChange
-        , onMouseDownPreventDefault
-        , onMouseMoveWithPosition
-        , onMouseUpPreventDefault
-        , onPointerMoveWithPosition
-        , onPointerUp
-        , onTouchEndPreventDefault
-        , onTouchMovePreventDefault
-        , onTouchStartPreventDefault
-        )
+module DateTimePicker.Events exposing
+    ( MoveData
+    , onBlurWithChange
+    , onMouseDownPreventDefault
+    , onMouseMoveWithPosition
+    , onMouseUpPreventDefault
+    , onPointerMoveWithPosition
+    , onPointerUp
+    , onTouchEndPreventDefault
+    , onTouchMovePreventDefault
+    , onTouchStartPreventDefault
+    )
 
-import Date exposing (Date)
+import DateTime exposing (DateTime)
 import Html
 import Html.Events
 import Json.Decode
@@ -20,7 +19,7 @@ import Svg
 import Svg.Events
 
 
-onBlurWithChange : (String -> Maybe Date) -> (Maybe Date -> msg) -> Html.Attribute msg
+onBlurWithChange : (String -> Maybe DateTime) -> (Maybe DateTime -> msg) -> Html.Attribute msg
 onBlurWithChange parser tagger =
     Html.Events.on "blur"
         (Json.Decode.map (parser >> tagger) Html.Events.targetValue)
@@ -30,44 +29,48 @@ onMouseDownPreventDefault : msg -> Html.Attribute msg
 onMouseDownPreventDefault msg =
     let
         eventOptions =
-            { preventDefault = True
+            { message = msg
+            , preventDefault = True
             , stopPropagation = True
             }
     in
-    Html.Events.onWithOptions "mousedown" eventOptions (Json.Decode.succeed msg)
+    Html.Events.custom "mousedown" (Json.Decode.succeed eventOptions)
 
 
 onTouchStartPreventDefault : msg -> Html.Attribute msg
 onTouchStartPreventDefault msg =
     let
         eventOptions =
-            { preventDefault = True
+            { message = msg
+            , preventDefault = True
             , stopPropagation = True
             }
     in
-    Html.Events.onWithOptions "touchstart" eventOptions (Json.Decode.succeed msg)
+    Html.Events.custom "touchstart" (Json.Decode.succeed eventOptions)
 
 
 onMouseUpPreventDefault : msg -> Html.Attribute msg
 onMouseUpPreventDefault msg =
     let
         eventOptions =
-            { preventDefault = True
+            { message = msg
+            , preventDefault = True
             , stopPropagation = True
             }
     in
-    Html.Events.onWithOptions "mouseup" eventOptions (Json.Decode.succeed msg)
+    Html.Events.custom "mouseup" (Json.Decode.succeed eventOptions)
 
 
 onTouchEndPreventDefault : msg -> Html.Attribute msg
 onTouchEndPreventDefault msg =
     let
         eventOptions =
-            { preventDefault = True
+            { message = msg
+            , preventDefault = True
             , stopPropagation = True
             }
     in
-    Html.Events.onWithOptions "touchend" eventOptions (Json.Decode.succeed msg)
+    Html.Events.custom "touchend" (Json.Decode.succeed eventOptions)
 
 
 onMouseMoveWithPosition : (MoveData -> Json.Decode.Decoder msg) -> Svg.Attribute msg
@@ -91,13 +94,13 @@ onTouchMovePreventDefault : msg -> Svg.Attribute msg
 onTouchMovePreventDefault msg =
     let
         eventOptions =
-            { preventDefault = True
+            { message = msg
+            , preventDefault = True
             , stopPropagation = True
             }
     in
-    Html.Events.onWithOptions "touchstart"
-        eventOptions
-        (Json.Decode.succeed msg)
+    Html.Events.custom "touchstart"
+        (Json.Decode.succeed eventOptions)
 
 
 type alias MoveData =
@@ -115,7 +118,7 @@ touches : Json.Decode.Decoder a -> Json.Decode.Decoder (List a)
 touches decoder =
     let
         loop idx xs =
-            Json.Decode.maybe (Json.Decode.field (toString idx) decoder)
+            Json.Decode.maybe (Json.Decode.field (String.fromInt idx) decoder)
                 |> Json.Decode.andThen
                     (Maybe.map (\x -> loop (idx + 1) (x :: xs))
                         >> Maybe.withDefault (Json.Decode.succeed xs)
